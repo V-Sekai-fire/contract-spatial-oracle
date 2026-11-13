@@ -1,4 +1,4 @@
-# AGENTS.md — interactor-spatial-oracle
+# AGENTS.md — contract-spatial-oracle
 
 Guidance for AI coding agents working in this repo.
 
@@ -6,8 +6,9 @@ Guidance for AI coding agents working in this repo.
 
 Lean proofs for the predictive spatial oracle (ghost expansion + SAH + broadphase) and a codegen pipeline that writes predictive_bvh.h (consumed by the multiplayer_fabric C++ module). Run `lake exe bvh-codegen` and commit the regenerated header.
 
-This is one hexagon cluster split out of the `lean-predictive-bvh` monorepo
-(now archived). It follows the `core/ports/adapters` convention. Do not
+This joins the `Shared` vocabulary and the `PredictiveBvh` hexagon cluster, both
+split out of the `lean-predictive-bvh` monorepo (now archived). `Shared` is a
+library of this package, not a git dependency. It follows the `core/ports/adapters` convention. Do not
 implement algorithms elsewhere that contradict a proof here — if an
 implementation differs from the Lean proof, trust the proof.
 

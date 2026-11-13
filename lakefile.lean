@@ -4,11 +4,11 @@
 import Lake
 open System Lake DSL
 
-package «lean-spatial-oracle» where
+package «contract-spatial-oracle» where
 
--- Shared primitive types (common vocabulary).
-require «lean-shared-core» from git
-  "https://github.com/v-sekai-multiplayer-fabric/lean-shared-core.git" @ "main"
+lean_lib Shared where
+  roots := #[`Shared]
+  globs := #[.one `Shared]
 
 -- ReBAC authorization core. Formulas reference Relativistic; known core->core
 -- leak tracked in PredictiveBvh/ports/sibling-repos.txt (TODO invert via a port).

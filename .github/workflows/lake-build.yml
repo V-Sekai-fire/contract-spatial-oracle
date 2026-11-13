@@ -20,13 +20,13 @@ jobs:
 
       # Setup: install toolchain, fetch the Mathlib cache (arrives transitively
       # via truth_research_zk), and resolve+clone the dependency graph
-      # (lean-shared-core, lean-rebac-core, truth_research_zk) by building the
+      # (lean-rebac-core, truth_research_zk) by building the
       # production lib. AmoLean (from truth_research_zk) is pure Lean — no native
       # SDK vendoring is required for the bvh-codegen exe.
       - name: setup toolchain + cache + clone deps (PredictiveBvh)
         uses: leanprover/lean-action@v1
         with:
-          build-args: "PredictiveBvh"
+          build-args: "Shared PredictiveBvh"
           test: false
           lint: false
           use-mathlib-cache: true

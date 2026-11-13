@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "lean-spatial-oracle: Hilbert broadphase, ghost expansion, BVH, and zone partitioning"
+title: "contract-spatial-oracle: shared types, Morton code, Hilbert broadphase, ghost expansion, BVH, and zone partitioning"
 abstract: >
   Lean 4 O(N+k) Hilbert broadphase for the V-Sekai multiplayer fabric's spatial
   oracle. Sorts N ghost-expanded AABBs by 30-bit Hilbert code via LSD radix sort,
@@ -19,7 +19,7 @@ authors:
 version: 0.1.0-dev.1
 date-released: "2026-06-25"
 license: MIT
-repository-code: "https://github.com/v-sekai-multiplayer-fabric/lean-spatial-oracle"
+repository-code: "https://github.com/V-Sekai-fire/contract-spatial-oracle"
 keywords:
   - lean4
   - formal-verification
@@ -123,11 +123,3 @@ references:
     year: 2026
     url: "https://github.com/v-sekai-multiplayer-fabric/lean-rebac-core"
 
-  - type: software
-    title: "lean-shared-core: Shared primitive types for the multiplayer-fabric hexagons"
-    authors:
-      - family-names: Lee
-        given-names: "K. S. Ernest (iFire)"
-        orcid: "https://orcid.org/0000-0003-4570-1436"
-    year: 2026
-    url: "https://github.com/v-sekai-multiplayer-fabric/lean-shared-core"
