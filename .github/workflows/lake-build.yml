@@ -36,6 +36,14 @@ jobs:
       - name: lake build (default target, bvh-codegen)
         run: lake build
 
+      - name: generated files are current
+        run: |
+          lake exe bvh-codegen
+          git diff --exit-code -- predictive_bvh.h testdata
+
+      - name: Morton check with its controls
+        run: sh tools/morton_check.sh
+
       # Research-tier optimal-partition proofs: built for signal, NOT gating.
       - name: lake build Research (non-gating)
         continue-on-error: true

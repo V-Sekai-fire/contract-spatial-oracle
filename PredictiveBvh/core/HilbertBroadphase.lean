@@ -83,7 +83,7 @@ def hilbertOfBox (b : BoundingBox) (scene : BoundingBox) : Nat :=
   let nx := ((cx - scene.minX) * 1024 / sw).toNat.min 1023
   let ny := ((cy - scene.minY) * 1024 / sh).toNat.min 1023
   let nz := ((cz - scene.minZ) * 1024 / sd).toNat.min 1023
-  hilbert3D nx ny nz
+  morton3D nx ny nz
 
 -- LSD radix sort on 30-bit Hilbert codes — O(N).
 -- Per LowerBound.lean: "Radix sort: O(N) — non-comparison, integer arithmetic".

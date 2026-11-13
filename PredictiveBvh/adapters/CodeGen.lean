@@ -457,7 +457,7 @@ private def aabbC : String :=
   "using Aabb = AabbT<int64_t>;\n\n" ++
   "/* Ring-polynomial provenance export: Π (1 - sign_bit(dᵢ)) over 6 axis diffs.\n" ++
   "   Proved equivalent to short-circuit r128_le chains below via bitDecompose;\n" ++
-  "   see aabbOverlapsExpr in Codegen/CodeGen.lean + HilbertBroadphase.lean. */\n" ++
+  "   see aabbOverlapsExpr in the generator and the broadphase proofs. */\n" ++
   genC "aabb_overlaps_ring"
     ["a_min_x","a_max_x","a_min_y","a_max_y","a_min_z","a_max_z",
      "b_min_x","b_max_x","b_min_y","b_max_y","b_min_z","b_max_z",
@@ -466,8 +466,80 @@ private def aabbC : String :=
 
 -- utilC removed: clz30, r128_half now in core/math/predictive_bvh_adapter.h
 
--- hilbertC removed: hilbert3d, hilbert3d_inverse, hilbert_of_aabb,
--- hilbert_cell_of now in core/math/predictive_bvh_adapter.h
+private def mortonC : String :=
+  "/* 30-bit Morton code of three 10-bit cells, x in the top bit of each triple.\n" ++
+  "   Source: Shared.morton3D, gated by morton_prefix_is_the_octree_cell.\n" ++
+  "   Defined here and nowhere else: testdata/morton_golden.tsv holds Lean's values. */\n" ++
+  "static inline uint32_t pbvh_part1by2(uint32_t n) {\n" ++
+  "    n &= 0x3ffu;\n" ++
+  "    n = (n | (n << 16)) & 0x030000FFu;\n" ++
+  "    n = (n | (n << 8)) & 0x0300F00Fu;\n" ++
+  "    n = (n | (n << 4)) & 0x030C30C3u;\n" ++
+  "    return (n | (n << 2)) & 0x09249249u;\n" ++
+  "}\n" ++
+  "static inline uint32_t pbvh_compact1by2(uint32_t n) {\n" ++
+  "    n &= 0x09249249u;\n" ++
+  "    n = (n | (n >> 2)) & 0x030C30C3u;\n" ++
+  "    n = (n | (n >> 4)) & 0x0300F00Fu;\n" ++
+  "    n = (n | (n >> 8)) & 0x030000FFu;\n" ++
+  "    return (n | (n >> 16)) & 0x000003FFu;\n" ++
+  "}\n" ++
+  "static inline uint32_t morton3d(uint32_t x, uint32_t y, uint32_t z) {\n" ++
+  "    return (pbvh_part1by2(x) << 2) | (pbvh_part1by2(y) << 1) | pbvh_part1by2(z);\n" ++
+  "}\n" ++
+  "static inline void morton3d_inverse(uint32_t m, uint32_t *ox, uint32_t *oy, uint32_t *oz) {\n" ++
+  "    *ox = pbvh_compact1by2(m >> 2);\n" ++
+  "    *oy = pbvh_compact1by2(m >> 1);\n" ++
+  "    *oz = pbvh_compact1by2(m);\n" ++
+  "}\n" ++
+  "static inline uint32_t pbvh_cell_axis(int64_t c, int64_t lo, int64_t span) {\n" ++
+  "    int64_t n = (c - lo) * 1024 / (span > 0 ? span : 1);\n" ++
+  "    return (uint32_t)(n < 0 ? 0 : n > 1023 ? 1023 : n);\n" ++
+  "}\n" ++
+  "/* The code of the cell that holds the centre of b, on a 1024-cell grid over scene. */\n" ++
+  "static inline uint32_t morton_of_aabb(const Aabb *b, const Aabb *scene) {\n" ++
+  "    return morton3d(\n" ++
+  "        pbvh_cell_axis((b->min_x + b->max_x) / 2, scene->min_x, scene->max_x - scene->min_x),\n" ++
+  "        pbvh_cell_axis((b->min_y + b->max_y) / 2, scene->min_y, scene->max_y - scene->min_y),\n" ++
+  "        pbvh_cell_axis((b->min_z + b->max_z) / 2, scene->min_z, scene->max_z - scene->min_z));\n" ++
+  "}\n" ++
+  "/* The octree cell named by the top 3 * prefix_depth bits of code. */\n" ++
+  "static inline Aabb morton_cell_of(uint32_t code, uint32_t prefix_depth, const Aabb *scene) {\n" ++
+  "    uint32_t cx, cy, cz;\n" ++
+  "    morton3d_inverse(code, &cx, &cy, &cz);\n" ++
+  "    int64_t sw = scene->max_x - scene->min_x, sh = scene->max_y - scene->min_y, sd = scene->max_z - scene->min_z;\n" ++
+  "    if (sw <= 0) sw = 1;\n" ++
+  "    if (sh <= 0) sh = 1;\n" ++
+  "    if (sd <= 0) sd = 1;\n" ++
+  "    uint32_t shift = prefix_depth < 10 ? 10 - prefix_depth : 0;\n" ++
+  "    int64_t cell = (int64_t)1 << shift;\n" ++
+  "    int64_t x0 = (cx >> shift) << shift, y0 = (cy >> shift) << shift, z0 = (cz >> shift) << shift;\n" ++
+  "    Aabb r;\n" ++
+  "    r.min_x = scene->min_x + x0 * sw / 1024;\n" ++
+  "    r.max_x = scene->min_x + (x0 + cell) * sw / 1024;\n" ++
+  "    r.min_y = scene->min_y + y0 * sh / 1024;\n" ++
+  "    r.max_y = scene->min_y + (y0 + cell) * sh / 1024;\n" ++
+  "    r.min_z = scene->min_z + z0 * sd / 1024;\n" ++
+  "    r.max_z = scene->min_z + (z0 + cell) * sd / 1024;\n" ++
+  "    return r;\n" ++
+  "}"
+
+private def goldenCells : List (Nat × Nat × Nat) :=
+  let fixed := [(0,0,0), (1,0,0), (0,1,0), (0,0,1), (5,3,7), (100,200,300), (511,511,511),
+    (512,512,512), (1023,1023,1023), (0,0,1023), (0,1023,0), (1023,0,0)]
+  let step := fun (s : Nat) => (s * 1103515245 + 12345) % 2147483648
+  let rec go (n s : Nat) (acc : List (Nat × Nat × Nat)) : List (Nat × Nat × Nat) :=
+    match n with
+    | 0 => acc.reverse
+    | n + 1 =>
+      let a := step s
+      let b := step a
+      let c := step b
+      go n c (((a / 65536) % 1024, (b / 65536) % 1024, (c / 65536) % 1024) :: acc)
+  fixed ++ go 500 20261113 []
+
+private def goldenFile : String :=
+  String.join (goldenCells.map fun (x, y, z) => s!"{x}\t{y}\t{z}\t{morton3D x y z}\n")
 
 -- ── C: extern forward-declarations for adapter-provided helpers ─────────────
 -- These functions are defined in core/math/predictive_bvh_adapter.h (which
@@ -488,10 +560,6 @@ private def adapterFwdDeclC : String :=
   "extern bool aabb_contains_point(const Aabb *a, R128 x, R128 y, R128 z);\n" ++
   "extern uint32_t clz30(uint32_t x);\n" ++
   "extern R128 r128_half(R128 v);\n" ++
-  "extern uint32_t hilbert3d(uint32_t x, uint32_t y, uint32_t z);\n" ++
-  "extern void hilbert3d_inverse(uint32_t h, uint32_t *ox, uint32_t *oy, uint32_t *oz);\n" ++
-  "extern uint32_t hilbert_of_aabb(const Aabb *b, const Aabb *scene);\n" ++
-  "extern Aabb hilbert_cell_of(uint32_t code, uint32_t prefix_depth, const Aabb *scene);\n" ++
   "extern uint32_t per_entity_delta_poly(R128 v, R128 a_half);"
 
 -- ── C: Constants ────────────────────────────────────────────────────────────
@@ -576,6 +644,7 @@ private def cFile : String :=
   planeCornerValC ++ "\n\n" ++
   aabbC ++ "\n\n" ++
   adapterFwdDeclC ++ "\n\n" ++
+  mortonC ++ "\n\n" ++
   constantsC ++ "\n\n" ++
   emlC ++ "\n\n" ++
   "/* ══════════════════════════════════════════════════════════════════════════\n" ++
@@ -591,4 +660,6 @@ private def cPath      : String := "predictive_bvh.h"
 
 def main : IO Unit := do
   IO.FS.writeFile cPath cFile
+  IO.FS.createDirAll "testdata"
+  IO.FS.writeFile "testdata/morton_golden.tsv" goldenFile
   IO.println s!"wrote {cPath}"
