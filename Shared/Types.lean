@@ -235,20 +235,6 @@ def morton3D (x y z : Nat) : Nat :=
 def morton3DInverse (m : Nat) : Nat × Nat × Nat :=
   (compact1by2 (m >>> 2), compact1by2 (m >>> 1), compact1by2 m)
 
-/-- Transitional alias. `hilbert3D` IS `morton3D` and has been since 2026-08-12.
-
-    The name is kept only so the ~240 references across `lean-spatial-oracle`,
-    `lean-rebac-core` and the Godot module do not all have to move in one commit. Every
-    use site gets a deprecation warning, so the compiler carries the remaining rename
-    rather than a TODO nobody reads.
-
-    This is a lying name on purpose and for a bounded time, which is a different thing
-    from what went wrong here before: that was a function claiming to be Hilbert and
-    being a BROKEN Hilbert, with nothing saying so. Delete this alias once the callers
-    have moved. -/
-@[deprecated morton3D (since := "2026-08-12")]
-def hilbert3D (x y z : Nat) : Nat := morton3D x y z
-
 -- ── The gate ───────────────────────────────────────────────────────────
 --
 -- These replace the contiguity gate the Hilbert version carried. Morton would FAIL that one

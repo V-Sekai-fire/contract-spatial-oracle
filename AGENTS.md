@@ -4,7 +4,7 @@ Guidance for AI coding agents working in this repo.
 
 ## What this is
 
-Lean proofs for the predictive spatial oracle (ghost expansion + SAH + broadphase) and a codegen pipeline that writes predictive_bvh.h (consumed by the multiplayer_fabric C++ module). Run `lake exe bvh-codegen` and commit the regenerated header.
+Lean proofs for the predictive spatial oracle (ghost expansion + SAH + broadphase) and a codegen pipeline that writes predictive_bvh.h (consumed by the multiplayer_fabric C++ module). Run `lake exe bvh-codegen` and commit the regenerated header and `testdata/morton_golden.tsv`. The curve is defined only by the generator; see `docs/morton.md`.
 
 This joins the `Shared` vocabulary and the `PredictiveBvh` hexagon cluster, both
 split out of the `lean-predictive-bvh` monorepo (now archived). `Shared` is a

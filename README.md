@@ -24,6 +24,8 @@ lake exe bvh-codegen
 
 `lake build Shared` builds the vocabulary alone and needs no cache.
 
+`sh tools/morton_check.sh` holds the generated C to Lean on `testdata/morton_golden.tsv`; see `docs/morton.md`.
+
 ## Licence
 
 MIT; see `LICENSE`.

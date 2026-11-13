@@ -13,7 +13,7 @@ namespace PredictiveBVH.Codegen.TreeC
 
 def treeBanner : String :=
   "/* ══════════════════════════════════════════════════════════════════════════\n" ++
-  "   PBVH TREE (Hilbert-radix nested-set BVH)\n" ++
+  "   PBVH TREE (Morton-radix nested-set BVH)\n" ++
   "   ══════════════════════════════════════════════════════════════════════════ */\n\n"
 
 def treeBody : String := "typedef uint32_t pbvh_eclass_id_t;
@@ -28,11 +28,11 @@ struct pbvh_node {
 \tpbvh_eclass_id_t eclass;
 \tpbvh_node_id_t next_free; /* PBVH_NULL_NODE when live */
 \tuint32_t is_leaf;
-\tuint32_t hilbert; /* 30-bit Hilbert code; sort key */
+\tuint32_t code; /* 30-bit Morton code; sort key */
 };
 using pbvh_node_t = pbvh_node<int64_t>;
 
-/* Hilbert-radix internal node over sorted[]. Stored in pre-order DFS, so the
+/* Morton-radix internal node over sorted[]. Stored in pre-order DFS, so the
  * array itself is a nested set: the subtree rooted at internals[i] occupies
  * contiguous indices [i, skip). On each node, (offset, span) is the
  * corresponding range inside t->sorted[] — the leaf-side nested set. */
@@ -49,7 +49,7 @@ using pbvh_internal_t = pbvh_internal<int64_t>;
 
 typedef struct pbvh_dirty_leaf {
 \tpbvh_node_id_t leaf_id;
-\tuint32_t old_hilbert;
+\tuint32_t old_code;
 } pbvh_dirty_leaf_t;
 
 template <typename T>
@@ -59,18 +59,18 @@ struct pbvh_tree {
 \tuint32_t count;
 \tpbvh_node_id_t root;
 \tpbvh_node_id_t free_head;
-\t/* Sorted-by-hilbert permutation of live leaf ids. Caller-owned, size capacity. */
+\t/* Sorted-by-code permutation of live leaf ids. Caller-owned, size capacity. */
 \tpbvh_node_id_t *sorted;
 \tuint32_t sorted_count;
 \tuint32_t last_visits; /* debug: # of leaves AABB-tested in the last query */
-\t/* Hilbert-radix internal tree over sorted[]. Mandatory for _n and _b
+\t/* Morton-radix internal tree over sorted[]. Mandatory for _n and _b
 \t * queries. Caller-owned; size at least 2*capacity covers any split shape. */
 \tpbvh_internal<T> *internals;
 \tuint32_t internal_capacity;
 \tuint32_t internal_count;
 \tpbvh_internal_id_t internal_root;
 \t/* Optional bucket directory: bucket_dir[p] is the half-open range
-\t * [lo, hi) of sorted[] indices whose Hilbert code has prefix p at
+\t * [lo, hi) of sorted[] indices whose Morton code has prefix p at
 \t * bucket_bits. Size must be 1u << bucket_bits; two uint32 per entry
 \t * laid out flat as [lo0, hi0, lo1, hi1, …]. Set bucket_bits=0 to skip. */
 \tuint32_t *bucket_dir;
@@ -100,7 +100,7 @@ using pbvh_tree_t = pbvh_tree<int64_t>;
  * Target max entities per bucket. Controls the constant-time upper bound on
  * pbvh_tree_aabb_query_b's per-bucket scan: a bucket cannot exceed
  * ceil(N / (1 << bucket_bits)) entities, so bucket_bits = ceil(log2(N/K))
- * gives at most K entities per bucket under uniform Hilbert distribution.
+ * gives at most K entities per bucket under uniform code distribution.
  * Empirical max/mean on uniform random inputs is ~1.06-1.30x (sub-Poisson),
  * so a K_TARGET of 32 yields worst-case ~40-entity scans at any N.
  * ========================================================================= */
