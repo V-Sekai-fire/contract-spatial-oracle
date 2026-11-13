@@ -1,20 +1,20 @@
 -- SPDX-License-Identifier: MIT
 -- Copyright (c) 2026-present K. S. Ernest (iFire) Lee
 
-import PredictiveBvh.core.HilbertBroadphase
+import PredictiveBvh.core.MortonBroadphase
 
 -- ============================================================================
 -- TEMPORAL COHERENCE  (research tier — NOT on CI production gate)
 --
 -- Light-cone principle (XPR / SolveOrder.lean §Bounded Propagation Speed):
 --   If an entity's velocity satisfies |vel| ≤ maxSpeed and maxSpeed < cellWidth
---   (one Hilbert cell per tick), it cannot cross a Hilbert cell boundary this
+--   (one Morton cell per tick), it cannot cross a Morton cell boundary this
 --   tick — it is inside its own light cone.  codeStable prev curr then follows
 --   from the velocity bound, making the dirty rate provable rather than empirical.
 --
 -- Item 3 — QuinticHermite prediction → skip-if-correct:
---   An entry is stable when its Hilbert code and ghost AABB are identical
---   between ticks.  If all entries in a group are stable, hilbertBroadphase
+--   An entry is stable when its Morton code and ghost AABB are identical
+--   between ticks.  If all entries in a group are stable, mortonBroadphase
 --   produces the same result on both ticks (pairsUnchanged, proved below).
 --
 -- Item 1 — Dirty-bit incremental tick:
@@ -25,24 +25,24 @@ import PredictiveBvh.core.HilbertBroadphase
 
 -- ── Item 3: codeStable predicate and pairsUnchanged theorem ──────────────────
 
-/-- An entry is stable across ticks when both its Hilbert code and ghost AABB
+/-- An entry is stable across ticks when both its Morton code and ghost AABB
     are unchanged.  Code stability means no group reassignment; ghost stability
     means pair outcomes are identical. -/
-def codeStable (prev curr : HilbertEntry) : Prop :=
+def codeStable (prev curr : MortonEntry) : Prop :=
   prev.code = curr.code ∧ prev.ghost = curr.ghost
 
-/-- If every entry in group g is stable across ticks, hilbertBroadphase on the
+/-- If every entry in group g is stable across ticks, mortonBroadphase on the
     prev and curr ghost arrays yields the same result.
     Proof: codeStable gives prev[i]!.ghost = curr[i]!.ghost for each i in the
     group.  The two mapped arrays are therefore equal by Array.map_congr_left,
     and congruence closes the goal. -/
-theorem pairsUnchanged (g : HilbertGroup)
-    (prev curr : Array HilbertEntry)
+theorem pairsUnchanged (g : MortonGroup)
+    (prev curr : Array MortonEntry)
     (hgl : g.first ≤ g.last)
     (stable : ∀ i, g.first ≤ i ∧ i ≤ g.last → codeStable prev[i]! curr[i]!) :
-    hilbertBroadphase
+    mortonBroadphase
         ((Array.range (g.last - g.first + 1)).map fun k => prev[g.first + k]!.ghost) =
-    hilbertBroadphase
+    mortonBroadphase
         ((Array.range (g.last - g.first + 1)).map fun k => curr[g.first + k]!.ghost) := by
   congr 1
   apply Array.map_congr_left
@@ -53,16 +53,16 @@ theorem pairsUnchanged (g : HilbertGroup)
 -- ── Item 1: Temporal broadphase state and incremental tick ───────────────────
 
 /-- Cached state between broadphase ticks.  dirtyGroups[gi] is true when any
-    entry in group gi changed its Hilbert code or ghost AABB since last tick. -/
+    entry in group gi changed its Morton code or ghost AABB since last tick. -/
 structure TemporalBroadphaseState where
-  prevSorted  : Array HilbertEntry
-  prevGroups  : Array HilbertGroup
+  prevSorted  : Array MortonEntry
+  prevGroups  : Array MortonGroup
   dirtyGroups : Array Bool
 
 /-- Mark a group dirty if any of its entries changed code or ghost since the
     previous tick.  Uses decidable field comparisons. -/
-private def computeDirtyGroups (prevSorted currSorted : Array HilbertEntry)
-    (groups : Array HilbertGroup) : Array Bool :=
+private def computeDirtyGroups (prevSorted currSorted : Array MortonEntry)
+    (groups : Array MortonGroup) : Array Bool :=
   groups.map fun g =>
     (List.range (g.last - g.first + 1)).any fun k =>
       let i := g.first + k
@@ -73,13 +73,13 @@ private def computeDirtyGroups (prevSorted currSorted : Array HilbertEntry)
 
 /-- Incremental broadphase tick.
     Stable tick (no dirty groups): returns prevResult unchanged at 0 new work.
-    Partial-dirty tick: runs hilbertBroadphase only on entities in dirty groups.
+    Partial-dirty tick: runs mortonBroadphase only on entities in dirty groups.
     With 2% entity movement (code-space, no fold crossings), ~4% of entities change
     state per tick → ~20% of groups dirty → work ≈ 2.7N vs 13.5N cold → 5× speedup.
     The totalWork field reflects dirty-subset work; pairs are empty (bench measures
     work reduction, not pair correctness). -/
 def tickBroadphase (state : TemporalBroadphaseState)
-    (currSorted : Array HilbertEntry) (prevResult : BroadphaseResult)
+    (currSorted : Array MortonEntry) (prevResult : BroadphaseResult)
     : BroadphaseResult × TemporalBroadphaseState :=
   let currGroups := formGroups currSorted
   let dirty := computeDirtyGroups state.prevSorted currSorted currGroups
@@ -100,7 +100,7 @@ def tickBroadphase (state : TemporalBroadphaseState)
           for k in List.range (g.last - g.first + 1) do
             acc := acc.push currSorted[g.first + k]!.ghost
       return acc
-    let dirtyResult := hilbertBroadphase dirtySorted
+    let dirtyResult := mortonBroadphase dirtySorted
     -- Return dirty-subset work; pairs field left empty (bench uses totalWork only)
     let result : BroadphaseResult :=
       { pairs := #[], pairsFound := 0,
@@ -114,7 +114,7 @@ def tickBroadphase (state : TemporalBroadphaseState)
     (partial tick) or we return 0 work (stable tick).  Replaces the sorry theorem
     tickBroadphase_sound; formal correctness of the pair list is a follow-on task. -/
 def tickBroadphase_check (state : TemporalBroadphaseState)
-    (currSorted : Array HilbertEntry) (prevResult : BroadphaseResult) : Bool :=
+    (currSorted : Array MortonEntry) (prevResult : BroadphaseResult) : Bool :=
   let (result, _) := tickBroadphase state currSorted prevResult
-  let fullWork := (hilbertBroadphase (currSorted.map (·.ghost))).totalWork
+  let fullWork := (mortonBroadphase (currSorted.map (·.ghost))).totalWork
   result.totalWork ≤ fullWork

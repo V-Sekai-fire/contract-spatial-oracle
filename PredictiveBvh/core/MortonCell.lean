@@ -1,18 +1,18 @@
 -- SPDX-License-Identifier: MIT
 -- Copyright (c) 2026-present K. S. Ernest (iFire) Lee
 --
--- Specification of hilbert_cell_of() from
+-- Specification of morton_cell_of() from
 -- multiplayer-fabric-godot/core/math/predictive_bvh_adapter.h (lines 399–427).
 --
--- hilbert_cell_of(code, prefixDepth, scene):
---   Recovers the AABB of the Hilbert cell identified by the top `prefixDepth`
+-- morton_cell_of(code, prefixDepth, scene):
+--   Recovers the AABB of the Morton cell identified by the top `prefixDepth`
 --   bits of `code`, expressed in scene-space µm coordinates.
 
 import Shared.Types
-import PredictiveBvh.core.HilbertBroadphase
+import PredictiveBvh.core.MortonBroadphase
 
 namespace PredictiveBVH
-namespace HilbertCell
+namespace MortonCell
 
 -- ── Coordinate normalization ──────────────────────────────────────────────────
 
@@ -63,11 +63,11 @@ def sceneExtentY (s : BoundingBox) : Int := max (s.maxY - s.minY) 1
 /-- Scene extent along Z axis, clamped to at least 1. -/
 def sceneExtentZ (s : BoundingBox) : Int := max (s.maxZ - s.minZ) 1
 
--- ── Lean model of hilbert_cell_of ────────────────────────────────────────────
+-- ── Lean model of morton_cell_of ────────────────────────────────────────────
 
-/-- The Hilbert cell AABB for a given code at a given prefix depth in scene space.
+/-- The Morton cell AABB for a given code at a given prefix depth in scene space.
     Uses BoundingBox for both scene parameter and result. -/
-def hilbertCellOf (_code prefixDepth : Nat) (scene : BoundingBox) : BoundingBox :=
+def mortonCellOf (_code prefixDepth : Nat) (scene : BoundingBox) : BoundingBox :=
   let w := cellWidthNorm prefixDepth
   let makeCell (x0 y0 z0 : Nat) : BoundingBox :=
     { minX := scene.minX + (x0 : Int) * sceneExtentX scene / 1024
@@ -76,14 +76,14 @@ def hilbertCellOf (_code prefixDepth : Nat) (scene : BoundingBox) : BoundingBox 
       maxY := scene.minY + ((y0 + w) : Int) * sceneExtentY scene / 1024
       minZ := scene.minZ + (z0 : Int) * sceneExtentZ scene / 1024
       maxZ := scene.minZ + ((z0 + w) : Int) * sceneExtentZ scene / 1024 }
-  -- Origin from inverse Hilbert; placeholder until inverse Hilbert is formalized.
+  -- Origin from inverse Morton; placeholder until inverse Morton is formalized.
   makeCell 0 0 0
 
 -- ── Key relational specification ─────────────────────────────────────────────
 
 /-- A point (nx, ny, nz) in [0, 1023]³ is in the cell identified by its top-d-bit
-    Hilbert prefix: it lies within the cell snapped to width 2^(10-d). -/
-def inHilbertCell (nx ny nz : Nat) (prefixDepth : Nat) (x0 y0 z0 : Nat) : Prop :=
+    Morton prefix: it lies within the cell snapped to width 2^(10-d). -/
+def inMortonCell (nx ny nz : Nat) (prefixDepth : Nat) (x0 y0 z0 : Nat) : Prop :=
   let w := cellWidthNorm prefixDepth
   x0 ≤ nx ∧ nx < x0 + w ∧
   y0 ≤ ny ∧ ny < y0 + w ∧
@@ -93,12 +93,12 @@ def inHilbertCell (nx ny nz : Nat) (prefixDepth : Nat) (x0 y0 z0 : Nat) : Prop :
 def cellOrigin (n prefixDepth : Nat) : Nat :=
   (n / cellWidthNorm prefixDepth) * cellWidthNorm prefixDepth
 
-theorem inHilbertCell_own_origin (nx ny nz prefixDepth : Nat) :
-    inHilbertCell nx ny nz prefixDepth
+theorem inMortonCell_own_origin (nx ny nz prefixDepth : Nat) :
+    inMortonCell nx ny nz prefixDepth
       (cellOrigin nx prefixDepth)
       (cellOrigin ny prefixDepth)
       (cellOrigin nz prefixDepth) := by
-  simp only [inHilbertCell, cellOrigin]
+  simp only [inMortonCell, cellOrigin]
   have hw  := cellWidthNorm_pos prefixDepth
   -- div_add_mod gives: w * (n/w) + n%w = n; commutativity bridges to (n/w)*w
   have hx1 := Nat.div_add_mod nx (cellWidthNorm prefixDepth)
@@ -175,16 +175,16 @@ theorem different_cells_disjoint (n1 n2 prefixDepth : Nat)
   intro heq
   exact h (Nat.eq_of_mul_eq_mul_right (cellWidthNorm_pos prefixDepth) heq)
 
--- ── Connection to HilbertSpan ─────────────────────────────────────────────────
+-- ── Connection to MortonSpan ─────────────────────────────────────────────────
 
-/-- The Hilbert prefix of a 30-bit code at depth d is the top d bits. -/
-def hilbertPrefix (code prefixDepth : Nat) : Nat :=
+/-- The Morton prefix of a 30-bit code at depth d is the top d bits. -/
+def mortonPrefix (code prefixDepth : Nat) : Nat :=
   code >>> (30 - prefixDepth)
 
-/-- Two codes with the same top-d-bit prefix belong to the same HilbertSpan. -/
+/-- Two codes with the same top-d-bit prefix belong to the same MortonSpan. -/
 theorem same_prefix_same_span (c1 c2 prefixDepth : Nat)
-    (h : hilbertPrefix c1 prefixDepth = hilbertPrefix c2 prefixDepth) :
+    (h : mortonPrefix c1 prefixDepth = mortonPrefix c2 prefixDepth) :
     c1 >>> (30 - prefixDepth) = c2 >>> (30 - prefixDepth) := h
 
-end HilbertCell
+end MortonCell
 end PredictiveBVH

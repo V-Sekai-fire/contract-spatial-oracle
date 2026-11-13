@@ -161,7 +161,7 @@ def intentSize : Nat := 88
 /-- An entity cannot cross a zone boundary if its ghost AABB is entirely within the zone.
     Proved sound by expansion_covers_k_ticks: the ghost covers all positions within δ ticks.
     The ghost containment check uses only axis-aligned bounds, which is valid even in a
-    Hilbert-partitioned fabric. -/
+    Morton-partitioned fabric. -/
 theorem ghost_inside_zone_no_crossing
     (ghost_min ghost_max zone_min zone_max : Int)
     (h_min : zone_min ≤ ghost_min) (h_max : ghost_max ≤ zone_max) :
@@ -231,9 +231,9 @@ theorem intent_size_is_88 : intentSize = 88 := rfl
 /-! ## Part 5a: Zone Partition (proved) -/
 
 /-- Zone assignment: maps a 30-bit space-filling curve code to a zone index.
-    Matches the C++ `_zone_for_hilbert` in `fabric_zone.cpp:615`.
+    Matches the C++ `_zone_for_morton` in `fabric_zone.cpp:615`.
     Zone z owns codes [z*stride, (z+1)*stride) where stride = 2^30 / count.
-    The formula is SFC-agnostic — works for both Morton and Hilbert codes. -/
+    The formula is SFC-agnostic — works for both Morton and Morton codes. -/
 def zoneForCode (code : Nat) (count : Nat) : Nat :=
   if count ≤ 1 then 0
   else

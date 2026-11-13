@@ -2,13 +2,13 @@
 -- Copyright (c) 2026-present K. S. Ernest (iFire) Lee
 
 import PlausibleWitnessDag
-import PredictiveBvh.core.HilbertBroadphase
+import PredictiveBvh.core.MortonBroadphase
 import PredictiveBvh.core.TemporalCoherence
 
 -- ============================================================================
 -- ZONE CONCURRENCY HILL-CLIMB (cold + temporal)
 --
--- Cold bench: single-tick hilbertBroadphase, averaged over numSeeds seeds.
+-- Cold bench: single-tick mortonBroadphase, averaged over numSeeds seeds.
 --   Theoretical ceiling: 50,000 / 13.5N ≈ 3,700; empirical ≈ 2,133.
 --
 -- Temporal bench: N players, 2% move 1 unit/tick via LCG.
@@ -61,14 +61,14 @@ private def seeds : List Nat :=
 
 def zoneWork (n : Nat) : Nat :=
   let total := seeds.take numSeeds |>.foldl (fun acc s =>
-    acc + (hilbertBroadphase (generatePlayers n s)).totalWork) 0
+    acc + (mortonBroadphase (generatePlayers n s)).totalWork) 0
   total / numSeeds
 
 def withinBudget (n : Nat) : Bool := zoneWork n ≤ workBudget
 
--- ── Temporal motion: 2% of entities move 1 Hilbert code step/tick ───────────
+-- ── Temporal motion: 2% of entities move 1 Morton code step/tick ───────────
 
-/-- Fixed scene bounds for Hilbert code assignment: padded beyond the generation
+/-- Fixed scene bounds for Morton code assignment: padded beyond the generation
     envelope so entity movement never changes scene width (sw). -/
 def fixedSceneBounds : BoundingBox :=
   let pad : Int := 3
@@ -76,12 +76,12 @@ def fixedSceneBounds : BoundingBox :=
     minY := -(ghostHalf + pad),                maxY := ghostHalf + pad,
     minZ := -(zoneSize / 2 + ghostHalf + pad), maxZ := zoneSize / 2 + ghostHalf + pad }
 
-/-- Advance a Hilbert-sorted array: ~2% of entities get code+1 and ghost minX+1.
+/-- Advance a Morton-sorted array: ~2% of entities get code+1 and ghost minX+1.
     Moving in code space (not world space) guarantees a +1 code change per moved
-    entity.  World-space movement crosses Hilbert-curve folds, jumping codes by
+    entity.  World-space movement crosses Morton-curve folds, jumping codes by
     millions and displacing the entity to a random sorted rank — making O(N)
     positions appear dirty even though only O(0.04N) entities actually moved. -/
-private def tickSorted (base : Array HilbertEntry) (tick : Nat) : Array HilbertEntry :=
+private def tickSorted (base : Array MortonEntry) (tick : Nat) : Array MortonEntry :=
   base.mapIdx fun _ e =>
     let s := lcgStep (e.id * 7919 + tick * 104729)
     if s % 50 == 0 then
@@ -89,7 +89,7 @@ private def tickSorted (base : Array HilbertEntry) (tick : Nat) : Array HilbertE
                ghost := { e.ghost with minX := e.ghost.minX + 1, maxX := e.ghost.maxX + 1 } }
     else e
 
-private def initTemporalState (base : Array HilbertEntry) : TemporalBroadphaseState :=
+private def initTemporalState (base : Array MortonEntry) : TemporalBroadphaseState :=
   let groups := formGroups base
   { prevSorted := base, prevGroups := groups,
     dirtyGroups := Array.replicate groups.size true }
@@ -98,7 +98,7 @@ private def initTemporalState (base : Array HilbertEntry) : TemporalBroadphaseSt
     after `warmupTicks` of warmup.  Uses code-space movement so only truly-moved
     entities are detected as dirty. -/
 def steadyStateWork (n : Nat) (baseSeed : Nat) (warmupTicks steadyTicks : Nat) : Nat :=
-  let baseSorted := sortByHilbertFixed (generatePlayers n baseSeed) fixedSceneBounds
+  let baseSorted := sortByMortonFixed (generatePlayers n baseSeed) fixedSceneBounds
   let initState  := initTemporalState baseSorted
   let initResult : BroadphaseResult :=
     { pairs := #[], pairsFound := 0, pairsPruned := 0, totalWork := 0, groupCount := 0 }

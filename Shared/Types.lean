@@ -184,28 +184,9 @@ def clz30 (x : Nat) : Nat :=
 
 -- ── 3D Morton curve (Z-order) ─────────────────────────────────────────
 --
--- This was a Hilbert curve until 2026-08-12 and is now Morton. The reason is not that
--- Hilbert is worse -- measured on this workspace's own data it is better on the metric it
--- is chosen for, 568 disjoint query ranges against Morton's 868, with a worst-case run
--- extent bounded at 2*L^(1/3)-1 where Morton has no bound at all.
---
--- It was written wrong twice. Here, and again by hand in C in the Godot engine's
--- `core/math/predictive_bvh_adapter.h`, with the same two mistakes both times: Skilling's
--- inner loop missing its `i = 0` step, and the transpose emitting z,y,x where X[0]=x
--- belongs. Measured, both scored 3583 of 4095 consecutive codes NOT face-adjacent -- 87.5%,
--- which is worse locality than the Morton they were chosen over, at five times the cost.
---
--- Both were clean bijections. Both round-tripped. The C one carried a CRASH_COND round-trip
--- witness that fired on every call and never once failed. A paper was cited. None of that
--- separates a Hilbert curve from any other bijection, and the defining property -- that
--- consecutive codes are adjacent cells -- was asserted nowhere until it was too late.
---
--- Morton cannot fail that way, and that is the whole argument. It is a bit permutation, so
--- the octree-prefix property the zone partitioning actually depends on is its definition
--- rather than a consequence of getting a rotation state machine right. There is no state to
--- get backwards. For prefix-partitioned assignment the two curves measured EXACTLY equal on
--- seam cost at every power-of-two zone count, so the locality Hilbert genuinely wins is not
--- being spent where this code spends it.
+-- A bit permutation: the octree-prefix property the zone partitioning depends on is its
+-- definition, with no rotation state to get backwards. docs/morton.md has the account of the
+-- curve this replaced on 2026-08-12 and of why.
 
 /-- Spread the low 10 bits of `n` so that bit i lands at position 3i. -/
 def part1by2 (n : Nat) : Nat :=
@@ -237,11 +218,9 @@ def morton3DInverse (m : Nat) : Nat × Nat × Nat :=
 
 -- ── The gate ───────────────────────────────────────────────────────────
 --
--- These replace the contiguity gate the Hilbert version carried. Morton would FAIL that one
--- by design -- half its consecutive codes jump -- so keeping it would have been a test that
--- passes for the wrong curve, which is the failure being fixed rather than repeated.
+-- A contiguity gate would fail for Morton by design, since half its consecutive codes jump.
 --
--- What is gated instead is what the partitioning actually relies on: the code is a bijection,
+-- What is gated is what the partitioning actually relies on: the code is a bijection,
 -- and the top 3d bits name the octree cell of side 2^(10-d).
 
 /-- Every cell of an `n`-cube, as `(x, y, z)`. -/
