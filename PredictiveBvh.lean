@@ -9,12 +9,12 @@ import PredictiveBvh.adapters.TreeC
 import PredictiveBvh.core.BucketBound
 import PredictiveBvh.core.BucketDir
 import PredictiveBvh.core.CurveContract
-import PredictiveBvh.core.CurveDuality
+import PredictiveBvh.compare.CurveDuality
 import PredictiveBvh.core.EMLAdversarialHeuristic
 import PredictiveBvh.core.Formula
-import PredictiveBvh.core.HilbertBroadphase
-import PredictiveBvh.core.HilbertCell
-import PredictiveBvh.core.HilbertRoundtrip
+import PredictiveBvh.core.MortonBroadphase
+import PredictiveBvh.core.MortonCell
+import PredictiveBvh.compare.SkillingRoundtrip
 import PredictiveBvh.core.LowerBound
 import PredictiveBvh.core.NonPhysical
 import PredictiveBvh.core.Resources

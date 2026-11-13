@@ -131,7 +131,7 @@ because they are not in the codegen import closure (so they don't gate
 defer because production consumers re-test results via callback
 predicates, so over-emission inside a proof gap is tolerated.
 
-- Phase 1c — functionalise `insertionSortByHilbert` off `Id.run do`,
+- Phase 1c — functionalise the insertion sort by code off `Id.run do`,
   then prove `sorted_is_ascending_after_build` and
   `aabbQueryB_agrees_with_aabbQueryN`.
 - Phase 2b' — soundness / completeness for `rayQueryN` / `convexQueryN`.
@@ -148,8 +148,8 @@ Production-tier (this repo, in the `lake build` gate):
 |---|---|
 | [Primitives/Types.lean](PredictiveBVH/Primitives/Types.lean) | `PbvhLeaf` / `PbvhInternal` / `BoundingBox` + basic ops |
 | [Spatial/BucketBound.lean](PredictiveBVH/Spatial/BucketBound.lean) | `N ≤ K_target · 2^(bucketBitsFor N)` (average bucket bound) |
-| [Spatial/HilbertBroadphase.lean](PredictiveBVH/Spatial/HilbertBroadphase.lean) | Hilbert-prefix broadphase correctness |
-| [Spatial/HilbertRoundtrip.lean](PredictiveBVH/Spatial/HilbertRoundtrip.lean) | Forward / inverse Hilbert bijection |
+| [core/MortonBroadphase.lean](PredictiveBvh/core/MortonBroadphase.lean) | Morton-prefix broadphase correctness |
+| [compare/SkillingRoundtrip.lean](PredictiveBvh/compare/SkillingRoundtrip.lean) | Forward and inverse of the comparison curve |
 | [Spatial/ScaleContradictions.lean](PredictiveBVH/Spatial/ScaleContradictions.lean) | Scale-proof contradictions |
 | [Spatial/EMLAdversarialHeuristic.lean](PredictiveBVH/Spatial/EMLAdversarialHeuristic.lean) | EML adversarial gap bounds |
 | [Formulas/Formula.lean](PredictiveBVH/Formulas/Formula.lean) | `ghostBoundExpr`, `surfaceAreaExpr`, `predictiveCostFormula` |

@@ -89,14 +89,7 @@ private def deltaCostExpr (dk : Nat) : Expr Int :=
 
 -- ── Code inverse ───────────────────────────────────────────────────────
 --
--- This was a hand-written inverse of the Hilbert transpose, maintained beside a forward
--- that lives in another repository. That is exactly how it broke once already: the
--- forward was corrected upstream, this did not follow, and the pair round-tripped onto
--- the wrong cell while every check here still passed.
---
--- It now delegates to `morton3DInverse` in `lean-shared-core`, which is the actual
--- inverse of the actual forward. One definition, one place, nothing to keep in step by
--- hand. If the forward changes again this cannot silently disagree with it.
+-- The inverse is `morton3DInverse` of `Shared`, the one inverse of the one forward.
 
 private def codeInverse (h : Nat) : Nat × Nat × Nat := morton3DInverse h
 
@@ -208,7 +201,7 @@ private def codeTestCases : List (Nat × Nat × Nat) :=
 -- ============================================================================
 -- 7b. GF(2) E-GRAPH BUILDING BLOCKS → ORDER 10 BY TEMPLATE
 --
--- The Skilling Hilbert roundtrip uses two building blocks:
+-- The Skilling curve roundtrip studied in PredictiveBvh/compare uses two building blocks:
 --   (A) XOR cancel:       (a ⊕ b) ⊕ b = a     (3 nodes, 2 vars)
 --   (B) Exchange inverse:  exch(exch(x,a,c)) = (x,a)  (~15 nodes, 3 vars)
 --
@@ -222,7 +215,7 @@ private def codeTestCases : List (Nat × Nat × Nat) :=
 -- the e-graph once; stamped out by structural repetition.
 -- ============================================================================
 
-section HilbertGF2Witness
+section ExchangeGF2Witness
 
 open AmoLean (Expr VarId)
 open AmoLean.EGraph (RewriteRule optimize SaturationConfig)
@@ -281,7 +274,7 @@ private def gf2Eval (env : VarId → Int) (e : Expr Int) : Int :=
 
   IO.println "GF2 TEMPLATE: A(e-graph) + B(eval) → order=10 by 9× stamping"
 
-end HilbertGF2Witness
+end ExchangeGF2Witness
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- C R128 BACKEND — uses Godot's thirdparty/misc/r128.h (64.64 fixed-point)
@@ -422,7 +415,7 @@ private def planeCornerValC : String :=
 
 -- ringMinMaxC removed: r128_sign_bit, ring_min/max_r128, pbvh_r128_min/max
 -- now live in core/math/predictive_bvh_adapter.h alongside the other
--- non-polynomial R128 helpers (utilC, hilbertC, deltaSelectC).
+-- non-polynomial R128 helpers (utilC, mortonC, deltaSelectC).
 
 private def deltaCostFnsC : String :=
   let costFns := deltaCandidates.map fun dk =>

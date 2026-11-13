@@ -1,12 +1,12 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "contract-spatial-oracle: shared types, Morton code, Hilbert broadphase, ghost expansion, BVH, and zone partitioning"
+title: "contract-spatial-oracle: shared types, Morton code, broadphase, ghost expansion, BVH, and zone partitioning"
 abstract: >
-  Lean 4 O(N+k) Hilbert broadphase for the V-Sekai multiplayer fabric's spatial
-  oracle. Sorts N ghost-expanded AABBs by 30-bit Hilbert code via LSD radix sort,
+  Lean 4 O(N+k) Morton broadphase for the V-Sekai multiplayer fabric's spatial
+  oracle. Sorts N ghost-expanded AABBs by 30-bit Morton code via LSD radix sort,
   groups into prefix windows, and sweeps with an adaptive inter-group window to
   report all overlapping pairs. Includes quintic-Hermite C³ ghost expansion,
-  Hilbert BVH with bucket-directory dispatch (BucketDir, O(1+k_bucket)),
+  Morton-keyed BVH with bucket-directory dispatch (BucketDir, O(1+k_bucket)),
   incremental dirty-leaf refit (O(K log N)), zone partitioning for
   authority/interest fanout, and an AmoLean E-graph code generator for the
   predictive_bvh.h C++ header. Part of the multiplayer-fabric hexagonal
@@ -24,7 +24,7 @@ keywords:
   - lean4
   - formal-verification
   - broadphase
-  - hilbert-curve
+  - morton-code
   - bvh
   - multiplayer
   - zone-partitioning

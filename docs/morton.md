@@ -22,10 +22,11 @@ than the Morton order it had been chosen over, at five times the cost. The comme
 `part1by2` in `Shared/Types.lean` has the account. Morton order is a permutation of bits, so the
 prefix property is its definition and there is no state to get backwards.
 
-The proofs that compare the two curves (`PredictiveBvh/core/CurveDuality.lean` and
-`CurveContract.lean`) keep a true Hilbert curve as a subject of study. Nothing that is generated
-uses it. Some Lean modules and definitions still carry the old name (`HilbertBroadphase`,
-`hilbertOfBox`); they compute Morton codes, and renaming them is work that is left.
+The proofs that compare the two curves live in `PredictiveBvh/compare/`: `CurveDuality.lean`
+measures Morton against a true Hilbert curve, and `SkillingRoundtrip.lean` holds that curve's
+stages. Nothing that is generated uses them. Outside that directory and this page no file names
+the old curve: the modules that compute Morton codes are `MortonBroadphase` and `MortonCell`, and
+`sh tools/name_lint.sh` holds it so, after it has found a planted name.
 
 ## One definition in C
 

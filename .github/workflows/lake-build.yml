@@ -41,6 +41,9 @@ jobs:
           lake exe bvh-codegen
           git diff --exit-code -- predictive_bvh.h testdata
 
+      - name: No file outside the comparison names the old curve
+        run: sh tools/name_lint.sh
+
       - name: Morton check with its controls
         run: sh tools/morton_check.sh
 

@@ -9,7 +9,7 @@
 -- Proves the average-bucket-size bound:
 --   N / 2^(bucketBitsFor N) ≤ K_target.
 -- The worst-case (max) bucket bound requires a uniformity/distinctness
--- assumption on the Hilbert-prefix distribution that is not mechanizable
+-- assumption on the Morton-prefix distribution that is not mechanizable
 -- from the abstract tree alone; the stress bench enforces it empirically
 -- via `CHECK_MESSAGE(bmax <= 2u * PBVH_BUCKET_K_TARGET, ...)`.
 

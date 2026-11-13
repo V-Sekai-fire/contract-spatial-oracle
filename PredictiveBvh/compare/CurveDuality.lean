@@ -2,12 +2,13 @@
 -- Copyright (c) 2026-present K. S. Ernest (iFire) Lee
 
 -- ============================================================================
--- WHY THIS REPOSITORY CARRIES TWO SPACE-FILLING CURVES
+-- WHY MORTON, MEASURED AGAINST A TRUE HILBERT CURVE
 --
--- `HilbertCell`/`HilbertBroadphase` sort, partition and address by Hilbert code.
--- A butterfly routing overlay (log-depth propagation between zones) cannot use
--- Hilbert and needs Morton. That is not a preference between two similar things;
--- the two curves have different algebra and each is load-bearing where it sits.
+-- Everything that ships sorts, partitions and addresses by Morton code (`Shared.morton3D`).
+-- This file keeps a correct Hilbert curve only as the thing Morton is compared with, so that
+-- the choice rests on theorems. Nothing generated uses it. A butterfly routing overlay
+-- (log-depth propagation between zones) cannot use Hilbert and needs Morton; the two curves
+-- have different algebra.
 --
 -- Morton is a bit permutation, so it is GF(2)-LINEAR: morton(a XOR b) =
 -- morton(a) XOR morton(b). A butterfly network is the Cayley graph of (Z/2)^n
@@ -33,10 +34,9 @@
 --
 -- ONE CAVEAT ABOUT WHAT `hilbert2` HERE IS. It is a correct 2D Hilbert curve, and
 -- `hilbert_clusters_better` and friends are statements about a correct curve. They
--- were NOT statements about the deployed encoder when they were written: at that
--- point `Shared.hilbert3D` had 87.5% non-adjacent consecutive steps and was not a
--- Hilbert curve at all. Fixed in `lean-shared-core#2`, which is what makes the
--- comparison below describe production rather than an ideal.
+-- were never statements about a deployed encoder: the one deployed under that name had
+-- 87.5% non-adjacent consecutive steps and was not a Hilbert curve at all. It is gone, and
+-- docs/morton.md has the account.
 -- ============================================================================
 
 namespace CurveDuality

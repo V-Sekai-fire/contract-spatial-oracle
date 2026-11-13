@@ -4,7 +4,7 @@
 import Mathlib.Data.Nat.ModEq
 import Shared.Types
 import PredictiveBvh.core.Formula
-import PredictiveBvh.core.HilbertCell
+import PredictiveBvh.core.MortonCell
 import PredictiveBvh.core.ScaleContradictions
 
 /-! # The non-physical segment
@@ -12,7 +12,7 @@ import PredictiveBvh.core.ScaleContradictions
 Not every entity has a body. A zone's authority, a contract marker, a board row and an item in
 somebody's hands are all entities a subscriber is sent, and none of them stands anywhere.
 
-The broadphase has no opinion about that: `hilbertCellOf` takes a position, `normalizeCoord`
+The broadphase has no opinion about that: `mortonCellOf` takes a position, `normalizeCoord`
 takes a coordinate, and an entity without one is an entity the tree cannot hold. Leaving them
 out is not free either — an entity outside the tree is outside every interest query, so it
 reaches a subscriber by some second path that has to be written, tested and kept in step.
@@ -187,11 +187,11 @@ theorem far_band_also_clears_ghosts : ghostReachUm < um 1000 - um 30 := by nativ
     A clamped coordinate is the failure this is here to rule out — everything that saturates
     lands on one step, which is the collapsed-to-a-point case again. -/
 theorem segment_normalizes_in_range :
-    HilbertCell.normalizeCoord segmentY segmentY sceneExtentUm = 0 ∧
-    HilbertCell.normalizeCoord deckCeilingUm segmentY sceneExtentUm ≤ 1023 := by
+    MortonCell.normalizeCoord segmentY segmentY sceneExtentUm = 0 ∧
+    MortonCell.normalizeCoord deckCeilingUm segmentY sceneExtentUm ≤ 1023 := by
   constructor
   · native_decide
-  · exact HilbertCell.normalizeCoord_range _ _ _
+  · exact MortonCell.normalizeCoord_range _ _ _
 
 end NonPhysical
 end PredictiveBVH
